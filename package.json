@@ -8,6 +8,7 @@
     "prestart": "npm run build && func extensions install",
     "start:host": "func start",
     "start": "npm run start:host & npm run watch",
+    "postinstall": "build",
     "build:production": "npm run prestart && npm prune --production",
     "test": "echo \"No tests yet...\""
   },
