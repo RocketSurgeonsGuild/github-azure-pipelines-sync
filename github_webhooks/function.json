@@ -15,7 +15,7 @@
         "head",
         "options"
       ],
-      "route": "github/webhooks"
+      "route": "github/webhooks/"
     },
     {
       "type": "http",
@@ -23,5 +23,5 @@
       "name": "res"
     }
   ],
-  "scriptFile": "../dist/HttpTrigger/index.js"
+  "scriptFile": "../dist/github_webhooks/index.js"
 }
