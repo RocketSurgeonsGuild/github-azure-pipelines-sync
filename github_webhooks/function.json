@@ -5,17 +5,8 @@
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
-      "methods": [
-        "patch",
-        "put",
-        "trace",
-        "post",
-        "delete",
-        "get",
-        "head",
-        "options"
-      ],
-      "route": "github/webhooks/"
+      "methods": ["post"],
+      "route": "github/webhooks"
     },
     {
       "type": "http",
