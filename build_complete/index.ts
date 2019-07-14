@@ -38,7 +38,7 @@ const buildComplete: AzureFunction = async function(
 
   if (body.resource.repository.type !== "GitHub") {
     context.res = {
-      status: 400,
+      status: 200,
       body: `This webhook only works with GitHub repositories`
     };
     return;
