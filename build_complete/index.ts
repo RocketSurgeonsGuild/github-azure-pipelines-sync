@@ -46,7 +46,7 @@ const buildComplete: AzureFunction = async function(
 
   if (!version) {
     context.res = {
-      status: 400,
+      status: 200,
       body: `Version returned by build was not a valid semver ${
         body.resource.buildNumber
       }`
