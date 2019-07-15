@@ -56,7 +56,17 @@ const labels = [
     name: ":boom: breaking change",
     color: "efa7ae",
     description: "This breaks existing behavior"
-  }
+  },
+  {
+    name: ":sparkles: mysterious",
+    color: "cccccc",
+    description: "We forgot to label this"
+  },
+  {
+    name: ":squirrel: chore",
+    color: "27127c",
+    description: "Just keeping things neat and tidy"
+  },
 ];
 
 const timerTrigger: AzureFunction = async function(

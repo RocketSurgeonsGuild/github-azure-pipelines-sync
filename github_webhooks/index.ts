@@ -52,7 +52,7 @@ webhooks.on("*", ({ id, name, payload }) => {
 
 async function assignToCurrentMilestone(
   payloadRepository: PayloadRepository,
-  issue: WebhookPayloadIssuesIssue | WebhookPayloadPullRequestPullRequest
+  issue: WebhookPayloadPullRequestPullRequest
 ) {
   const { repository }: FetchMilestones = await githubGraphQL(FetchMilestones, {
     owner: payloadRepository.owner.login,
@@ -71,11 +71,19 @@ async function assignToCurrentMilestone(
 
   console.log({ id: issue.node_id, milestoneId: milestone.id });
 
+  const labels = [];
+  if (issue.labels && issue.labels.length) {
+    labels.push(...issue.labels);
+  } else {
+    labels.push(':sparkles: mysterious');
+  }
+
   githubRest.issues.update({
     owner: payloadRepository.owner.login,
     repo: payloadRepository.name,
     issue_number: issue.number,
-    milestone: milestone.number
+    milestone: milestone.number,
+    labels: labels
   });
 }
 
