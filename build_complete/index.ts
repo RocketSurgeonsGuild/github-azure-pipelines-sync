@@ -64,11 +64,31 @@ const buildComplete: AzureFunction = async function(
     name: repo
   });
 
-  if (repository.milestones.nodes.some(z => z.title === milestone)) {
-    context.res = {
-      status: 200,
-      body: `Milestone ${milestone} already exists!`
-    };
+  const existingMilestone = repository.milestones.nodes.find(z => z.title === milestone);
+  if (existingMilestone) {
+    if (body.resource.buildNumber === milestone) {
+      var existingMilestones = await githubRest.issues.listMilestonesForRepo({
+        owner,
+        repo,
+        state: 'open',
+        per_page: 100,
+      });
+      var foundMilestone = existingMilestones.data.find(z => z.title === milestone)!;
+
+      await githubRest.issues.updateMilestone({
+        milestone_number: foundMilestone.id,
+        owner,
+        repo,
+        title: milestone,
+        state: 'closed'
+      });
+
+    } else {
+      context.res = {
+        status: 200,
+        body: `Milestone ${milestone} already exists!`
+      };
+    }
     return;
   }
 
