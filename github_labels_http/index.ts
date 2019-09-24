@@ -16,6 +16,7 @@ const buildComplete: AzureFunction = async function(
         nodes: Array<{
           id: string;
           name: string;
+          isArchived: boolean;
           owner: {
             name: string;
           };
@@ -40,6 +41,7 @@ const buildComplete: AzureFunction = async function(
             nodes {
               id
               name
+              isArchived
               owner {
                 name: login
               }
@@ -60,6 +62,7 @@ const buildComplete: AzureFunction = async function(
   );
 
   for (const repo of repositoryOwner.repositories.nodes) {
+    if (repo.isArchived) continue;
     // const labelsToDelete = [];
     // for (const repoLabel of repo.labels.nodes) {
     //   context.log(repoLabel.name);
