@@ -62,6 +62,7 @@ const buildComplete: AzureFunction = async function(
   );
 
   for (const repo of repositoryOwner.repositories.nodes) {
+    context.log("repo", repo.owner.name, repo.name);
     if (repo.isArchived) continue;
     for (const definedLabel of labels) {
       if (
