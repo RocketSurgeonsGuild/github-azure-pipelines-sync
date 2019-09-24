@@ -67,6 +67,11 @@ const labels = [
     color: "27127c",
     description: "Just keeping things neat and tidy"
   },
+  {
+    name: ":package: dependencies",
+    color: "edc397",
+    description: "We've updated something that we use"
+  },
 ];
 
 const timerTrigger: AzureFunction = async function(
