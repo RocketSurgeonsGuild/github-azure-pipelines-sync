@@ -2,11 +2,11 @@ import { AzureFunction, Context } from "@azure/functions";
 import { githubGraphQL, gql, githubRest } from "../globals";
 import labels, { labelUpdater } from "../labels";
 
-const timerTrigger: AzureFunction = async function(
+const timerTrigger: AzureFunction = function(
   context: Context,
   myTimer: any
 ): Promise<void> {
-  await labelUpdater(context);
+  return labelUpdater(context);
 };
 
 export default timerTrigger;
