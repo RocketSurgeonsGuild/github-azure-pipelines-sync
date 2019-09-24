@@ -1,10 +1,10 @@
-import { AzureFunction, Context } from "@azure/functions";
+import { AzureFunction, Context, HttpRequest } from "@azure/functions";
 import { githubGraphQL, gql, githubRest } from "../globals";
 import labels from "../labels";
 
-const timerTrigger: AzureFunction = async function(
+const buildComplete: AzureFunction = async function(
   context: Context,
-  myTimer: any
+  req: HttpRequest
 ): Promise<void> {
   const {
     repositoryOwner
@@ -120,4 +120,4 @@ const timerTrigger: AzureFunction = async function(
   }
 };
 
-export default timerTrigger;
+export default buildComplete;
