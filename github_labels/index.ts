@@ -68,7 +68,7 @@ const timerTrigger: AzureFunction = async function(
         repo.labels.nodes.some(
           repoLabel =>
             repoLabel.name === definedLabel.name &&
-            repoLabel.description === definedLabel.description &&
+            // repoLabel.description === definedLabel.description &&
             repoLabel.color === definedLabel.color
         )
       ) {
