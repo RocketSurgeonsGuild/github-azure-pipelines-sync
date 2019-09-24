@@ -1,4 +1,4 @@
-import { githubRest, githubGraphQL } from "./globals";
+import { githubRest, githubGraphQL, gql } from "./globals";
 import { Context } from "@azure/functions";
 
 const labels = [
