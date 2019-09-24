@@ -68,7 +68,7 @@ const labels = [
   {
     name: ":package: dependencies",
     color: "edc397",
-    description: "We've updated something that we use"
+    description: "Pull requests that update a dependency file"
   },
 ];
 
