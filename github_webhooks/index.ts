@@ -11,9 +11,15 @@ import WebhooksApi, {
   WebhookPayloadIssuesIssue,
   WebhookPayloadPullRequestPullRequest
 } from "@octokit/webhooks";
-import { identity, maxBy } from "lodash";
+import Octokit = require("@octokit/rest");
+import { identity, maxBy, differenceBy } from "lodash";
 import semver from "semver";
 import { githubGraphQL, githubRest, gql, FetchMilestones } from "../globals";
+
+import AbortController from "abort-controller";
+import { from, Observable, empty, of, forkJoin, zip } from "rxjs";
+import { mergeMap, map, expand, filter, toArray, skip } from "rxjs/operators";
+
 const createHandler = require("azure-function-express").createHandler;
 
 const webhooks = new WebhooksApi({
@@ -31,6 +37,15 @@ app
   .use((req, res, next) => {
     webhooks.middleware(req, res, next);
   });
+
+webhooks.on("create", async event => {
+  if (event.payload.ref_type === "tag") {
+    await ensureMilestonesAreCorrect({
+      owner: event.payload.repository.owner.login,
+      repo: event.payload.repository.name
+    }).forEach(a => {});
+  }
+});
 
 webhooks.on("pull_request.closed", async event => {
   // console.log(event.payload);
@@ -75,10 +90,10 @@ async function assignToCurrentMilestone(
   if (issue.labels && issue.labels.length) {
     labels.push(...issue.labels);
   } else {
-    labels.push(':sparkles: mysterious');
+    labels.push(":sparkles: mysterious");
   }
 
-  githubRest.issues.update({
+  await githubRest.issues.update({
     owner: payloadRepository.owner.login,
     repo: payloadRepository.name,
     issue_number: issue.number,
@@ -89,22 +104,183 @@ async function assignToCurrentMilestone(
 
 export default createHandler(app);
 
-// const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
-//   context.log('HTTP trigger function processed a request.');
-//   const name = (req.query.name || (req.body && req.body.name));
+function ensureMilestonesAreCorrect(request: { owner: string; repo: string }) {
+  const milestones = getVersionMilestones(request);
+  const versions = getTagVersions(request);
 
-//   if (name) {
-//       context.res = {
-//           // status: 200, /* Defaults to 200 */
-//           body: "Hello " + (req.query.name || req.body.name)
-//       };
-//   }
-//   else {
-//       context.res = {
-//           status: 400,
-//           body: "Please pass a name on the query string or in the request body"
-//       };
-//   }
-// };
+  return forkJoin(milestones, versions).pipe(
+    mergeMap(([milestones, versions]) => {
+      const unlabledMilestones = differenceBy(
+        milestones,
+        versions,
+        z => z.semver
+      );
+      const versionRange = [
+        "refs/heads/master",
+        ...versions.map(z => `refs/tags/${z.name}`)
+      ];
 
-// export default httpTrigger;
+      const versionRanges = zip(
+        from(versionRange),
+        from(versionRange).pipe(skip(1))
+      ).pipe(
+        mergeMap(([head, base]) =>
+          getPullRequestsBetween({ ...request, base, head }).pipe(
+            toArray(),
+            map(pullRequests => ({ head, base, pullRequests }))
+          )
+        )
+      );
+
+      return versionRanges.pipe(
+        mergeMap(set => {
+          const name = set.head
+            .replace("refs/tags/", "")
+            .replace("refs/heads/", "");
+
+          let milestone = milestones.find(z => z.title === name);
+          if (name === "master" && unlabledMilestones.length) {
+            milestone = unlabledMilestones[0];
+          }
+
+          if (milestone) {
+            return from(set.pullRequests).pipe(
+              mergeMap(pr => {
+                milestone; //?
+                if (
+                  milestone &&
+                  pr.milestone &&
+                  pr.milestone.title !== milestone.title
+                ) {
+                  console.log(
+                    "need to update milestone on " +
+                      pr.title +
+                      " from " +
+                      pr.milestone.title +
+                      " to " +
+                      milestone.title
+                  );
+                  return from(
+                    githubRest.issues.update({
+                      ...request,
+                      milestone: milestone.number,
+                      issue_number: pr.number
+                    })
+                  ).pipe(mergeMap(() => empty()));
+                }
+                return empty();
+              })
+            );
+          }
+
+          return empty();
+        })
+      );
+    })
+  );
+}
+
+function getTagVersions(request: { owner: string; repo: string }) {
+  return rxifyRequest(githubRest, githubRest.repos.listTags, request).pipe(
+    map(x => ({ ...x, semver: semver.parse(x.name)! })),
+    filter(z => z.semver != null),
+    toArray(),
+    map(versions =>
+      versions.sort((a, b) => semver.rcompare(a.semver, b.semver))
+    )
+  );
+}
+
+function getVersionMilestones(request: { owner: string; repo: string }) {
+  return rxifyRequest(githubRest, githubRest.issues.listMilestonesForRepo, {
+    ...request,
+    state: "all"
+  }).pipe(
+    map(x => ({ ...x, semver: semver.parse(x.title)! })),
+    filter(z => z.semver != null),
+    toArray(),
+    map(milestones =>
+      milestones.sort((a, b) => semver.rcompare(a.semver, b.semver))
+    )
+  );
+}
+
+function getPullRequestsBetween(request: {
+  head: string;
+  base: string;
+  owner: string;
+  repo: string;
+}) {
+  const { owner, repo } = request;
+  return rxifyRequest(
+    githubRest,
+    githubRest.repos.compareCommits,
+    request
+  ).pipe(
+    mergeMap(commits =>
+      from(commits.commits).pipe(
+        mergeMap(
+          commit =>
+            rxifyRequest(
+              githubRest,
+              githubRest.repos.listPullRequestsAssociatedWithCommit,
+              {
+                owner,
+                repo,
+                commit_sha: commit.sha
+              }
+            ),
+          4
+        )
+      )
+    )
+  );
+}
+
+type ValueOf<T> = T extends Array<infer R>
+  ? R
+  : T extends Promise<infer R>
+  ? R
+  : T extends Observable<infer R>
+  ? R
+  : T extends Iterator<infer R>
+  ? R
+  : T;
+
+function rxifyRequest<T, R>(
+  ocotokit: Octokit,
+  method: (request: T) => Promise<Octokit.Response<R>>,
+  request: T
+) {
+  delete (request as any).page;
+  return new Observable<ValueOf<R>>(subscriber => {
+    const controller = new AbortController();
+    from(method({ ...request, request: { signal: controller.signal } }))
+      .pipe(
+        expand(({ headers }) => {
+          if (headers.link) {
+            const next = getLink(headers.link, "next");
+            if (next) {
+              return from(ocotokit.request({
+                url: next,
+                request: { signal: controller.signal }
+              }) as Promise<Octokit.Response<R>>);
+            }
+          }
+          return empty();
+        }),
+        mergeMap(
+          results =>
+            (Array.isArray(results.data)
+              ? from(results.data)
+              : of(results.data)) as Observable<ValueOf<R>>
+        )
+      )
+      .subscribe(subscriber);
+    return () => controller.abort();
+  });
+}
+
+function getLink(value: string, name: string) {
+  return (value.match(new RegExp(`<([^>]+)>;\\s*rel="${name}"`)) || [])[1];
+}
