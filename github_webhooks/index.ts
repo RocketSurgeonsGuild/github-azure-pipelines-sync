@@ -12,7 +12,7 @@ import WebhooksApi, {
   WebhookPayloadPullRequestPullRequest
 } from "@octokit/webhooks";
 import Octokit = require("@octokit/rest");
-import { identity, maxBy, differenceBy } from "lodash";
+import { identity, maxBy, differenceBy, slice } from "lodash";
 import semver from "semver";
 import { githubGraphQL, githubRest, gql, FetchMilestones } from "../globals";
 
@@ -39,12 +39,24 @@ app
   });
 
 webhooks.on("create", async event => {
-  if (event.payload.ref_type === "tag") {
-    await ensureMilestonesAreCorrect({
-      owner: event.payload.repository.owner.login,
-      repo: event.payload.repository.name
-    }).forEach(a => {});
-  }
+  await ensureMilestonesAreCorrect({
+    owner: event.payload.repository.owner.login,
+    repo: event.payload.repository.name
+  }).forEach(a => {});
+});
+
+webhooks.on("release.created", async event => {
+  await ensureMilestonesAreCorrect({
+    owner: event.payload.repository.owner.login,
+    repo: event.payload.repository.name
+  }).forEach(a => {});
+});
+
+webhooks.on("pull_request.opened", async event => {
+  await ensureMilestonesAreCorrect({
+    owner: event.payload.repository.owner.login,
+    repo: event.payload.repository.name
+  }).forEach(a => {});
 });
 
 webhooks.on("pull_request.closed", async event => {
@@ -187,7 +199,8 @@ function getTagVersions(request: { owner: string; repo: string }) {
     toArray(),
     map(versions =>
       versions.sort((a, b) => semver.rcompare(a.semver, b.semver))
-    )
+    ),
+    map(z => slice(z, 0, 8))
   );
 }
 
@@ -201,7 +214,8 @@ function getVersionMilestones(request: { owner: string; repo: string }) {
     toArray(),
     map(milestones =>
       milestones.sort((a, b) => semver.rcompare(a.semver, b.semver))
-    )
+    ),
+    map(z => slice(z, 0, 8))
   );
 }
 
