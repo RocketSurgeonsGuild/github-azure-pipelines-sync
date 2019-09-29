@@ -39,24 +39,24 @@ app
   });
 
 webhooks.on("create", async event => {
-  await ensureMilestonesAreCorrect({
+  ensureMilestonesAreCorrect({
     owner: event.payload.repository.owner.login,
     repo: event.payload.repository.name
-  }).forEach(a => {});
+  }).subscribe();
 });
 
 webhooks.on("release.created", async event => {
-  await ensureMilestonesAreCorrect({
+  ensureMilestonesAreCorrect({
     owner: event.payload.repository.owner.login,
     repo: event.payload.repository.name
-  }).forEach(a => {});
+  }).subscribe();
 });
 
 webhooks.on("pull_request.opened", async event => {
-  await ensureMilestonesAreCorrect({
+  ensureMilestonesAreCorrect({
     owner: event.payload.repository.owner.login,
     repo: event.payload.repository.name
-  }).forEach(a => {});
+  }).subscribe();
 });
 
 webhooks.on("pull_request.closed", async event => {
