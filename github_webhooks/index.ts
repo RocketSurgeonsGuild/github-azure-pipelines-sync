@@ -200,7 +200,7 @@ function getTagVersions(request: { owner: string; repo: string }) {
     map(versions =>
       versions.sort((a, b) => semver.rcompare(a.semver, b.semver))
     ),
-    map(z => slice(z, 0, 8))
+    map(z => slice(z, 0, 4))
   );
 }
 
@@ -215,7 +215,7 @@ function getVersionMilestones(request: { owner: string; repo: string }) {
     map(milestones =>
       milestones.sort((a, b) => semver.rcompare(a.semver, b.semver))
     ),
-    map(z => slice(z, 0, 8))
+    map(z => slice(z, 0, 4))
   );
 }
 
