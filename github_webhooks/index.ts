@@ -38,8 +38,15 @@ app
     webhooks.middleware(req, res, next);
   });
 
-webhooks.on("create", async event => {
-  await ensureMilestonesAreCorrect({
+webhooks.on("milestone.created", async event => {
+  ensureMilestonesAreCorrect({
+    owner: event.payload.repository.owner.login,
+    repo: event.payload.repository.name
+  }).forEach(a => {});
+});
+
+webhooks.on("milestone.opened", async event => {
+  ensureMilestonesAreCorrect({
     owner: event.payload.repository.owner.login,
     repo: event.payload.repository.name
   }).forEach(a => {});
