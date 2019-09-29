@@ -39,24 +39,24 @@ app
   });
 
 webhooks.on("create", async event => {
-  ensureMilestonesAreCorrect({
+  await ensureMilestonesAreCorrect({
     owner: event.payload.repository.owner.login,
     repo: event.payload.repository.name
-  }).subscribe();
+  }).forEach(a => {});
 });
 
 webhooks.on("release.created", async event => {
   ensureMilestonesAreCorrect({
     owner: event.payload.repository.owner.login,
     repo: event.payload.repository.name
-  }).subscribe();
+  }).forEach(a => {});
 });
 
 webhooks.on("pull_request.opened", async event => {
   ensureMilestonesAreCorrect({
     owner: event.payload.repository.owner.login,
     repo: event.payload.repository.name
-  }).subscribe();
+  }).forEach(a => {});
 });
 
 webhooks.on("pull_request.closed", async event => {
@@ -158,19 +158,14 @@ function ensureMilestonesAreCorrect(request: { owner: string; repo: string }) {
           if (milestone) {
             return from(set.pullRequests).pipe(
               mergeMap(pr => {
-                milestone; //?
+                console.log(`checking milestone for #${pr.id} - ${pr.title}`);
                 if (
                   milestone &&
                   pr.milestone &&
                   pr.milestone.title !== milestone.title
                 ) {
                   console.log(
-                    "need to update milestone on " +
-                      pr.title +
-                      " from " +
-                      pr.milestone.title +
-                      " to " +
-                      milestone.title
+                    `need to update milestone on ${pr.title} from ${pr.milestone.title} to ${milestone.title}`
                   );
                   return from(
                     githubRest.issues.update({
