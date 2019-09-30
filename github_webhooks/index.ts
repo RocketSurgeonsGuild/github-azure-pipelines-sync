@@ -39,32 +39,32 @@ app
   });
 
 webhooks.on("milestone.created", async event => {
-  ensureMilestonesAreCorrect({
+  await ensureMilestonesAreCorrect({
     owner: event.payload.repository.owner.login,
     repo: event.payload.repository.name
   }).forEach(a => {});
 });
 
-webhooks.on("milestone.opened", async event => {
-  ensureMilestonesAreCorrect({
-    owner: event.payload.repository.owner.login,
-    repo: event.payload.repository.name
-  }).forEach(a => {});
-});
+// webhooks.on("release.created", async event => {
+//   if (event.payload.release.draft) return;
+//   if (!event.payload.release.prerelease) return;
+//   if (
+//     event.payload.release.body &&
+//     !(event.payload.release as any).body.match(/This list of changes was/i)
+//   )
+//     return;
+//   await ensureMilestonesAreCorrect({
+//     owner: event.payload.repository.owner.login,
+//     repo: event.payload.repository.name
+//   }).forEach(a => {});
+// });
 
-webhooks.on("release.created", async event => {
-  ensureMilestonesAreCorrect({
-    owner: event.payload.repository.owner.login,
-    repo: event.payload.repository.name
-  }).forEach(a => {});
-});
-
-webhooks.on("pull_request.opened", async event => {
-  ensureMilestonesAreCorrect({
-    owner: event.payload.repository.owner.login,
-    repo: event.payload.repository.name
-  }).forEach(a => {});
-});
+// webhooks.on("pull_request.closed", async event => {
+//   await ensureMilestonesAreCorrect({
+//     owner: event.payload.repository.owner.login,
+//     repo: event.payload.repository.name
+//   }).forEach(a => {});
+// });
 
 webhooks.on("pull_request.closed", async event => {
   // console.log(event.payload);
@@ -202,7 +202,7 @@ function getTagVersions(request: { owner: string; repo: string }) {
     map(versions =>
       versions.sort((a, b) => semver.rcompare(a.semver, b.semver))
     ),
-    map(z => slice(z, 0, 4))
+    map(z => slice(z, 0, 2))
   );
 }
 
@@ -217,7 +217,7 @@ function getVersionMilestones(request: { owner: string; repo: string }) {
     map(milestones =>
       milestones.sort((a, b) => semver.rcompare(a.semver, b.semver))
     ),
-    map(z => slice(z, 0, 4))
+    map(z => slice(z, 0, 3))
   );
 }
 
