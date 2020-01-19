@@ -63,7 +63,7 @@ const labels = [
     description: "We forgot to label this"
   },
   {
-    name: ":squirrel: chore",
+    name: ":hammer: chore",
     color: "27127c",
     description: "Just keeping things neat and tidy"
   },
