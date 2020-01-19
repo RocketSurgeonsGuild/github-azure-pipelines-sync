@@ -106,14 +106,15 @@ async function assignToCurrentMilestone(
   console.log({ id: issue.node_id, milestoneId: milestone.id });
 
   const labels = [];
+
+  if (issue.labels.includes(":shipit: merge")) {
+    issue.labels.splice(0, 1, issue.labels.indexOf(":shipit: merge"));
+  }
+
   if (issue.labels && issue.labels.length) {
     labels.push(...issue.labels);
   } else {
     labels.push(":sparkles: mysterious");
-  }
-
-  if (labels.includes(":shipit: merge")) {
-    labels.splice(0, 1, labels.indexOf(":shipit: merge"));
   }
 
   await githubRest.issues.update({
