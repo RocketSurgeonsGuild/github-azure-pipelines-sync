@@ -1,11 +1,17 @@
 import { AzureFunction, Context } from "@azure/functions";
 import { githubGraphQL, gql, githubRest } from "../globals";
 import labels from "../labels";
+import { from } from "rxjs";
+import { groupBy, toArray, map, mergeAll } from "rxjs/operators";
 
 const timerTrigger: AzureFunction = async function(
   context: Context,
   myTimer: any
 ): Promise<void> {
+  await syncLabels(context);
+};
+
+export async function syncLabels(context: Context, skip = true) {
   const {
     repositoryOwner
   }: {
@@ -61,10 +67,20 @@ const timerTrigger: AzureFunction = async function(
     { owner: "RocketSurgeonsGuild" }
   );
 
+  function getLabelName(name: string) {
+    let match = name.match(/^:\w+: (.*)$/);
+    if (match) return match[1];
+    match = name.match(/^(.*) :\w+:$/);
+    if (match) return match[1];
+    return name;
+  }
+
   for (const repo of repositoryOwner.repositories.nodes) {
+    context.log("repo", repo.owner.name, repo.name);
     if (repo.isArchived) continue;
     for (const definedLabel of labels) {
       if (
+        skip &&
         repo.labels.nodes.some(
           repoLabel =>
             repoLabel.name === definedLabel.name &&
@@ -76,9 +92,34 @@ const timerTrigger: AzureFunction = async function(
         continue;
       }
 
+      const groups = await from(repo.labels.nodes)
+        .pipe(
+          groupBy(x => getLabelName(x.name)),
+          map(x =>
+            x.pipe(
+              toArray(),
+              map(values => [x.key, values] as const)
+            )
+          ),
+          mergeAll(),
+          toArray()
+        )
+        .toPromise();
+      for (const [key, values] of groups.filter(z => z.length > 1)) {
+        for (const value of values) {
+          if (labels.some(label => label.name === value.name)) continue;
+          await githubRest.issues.deleteLabel({
+            owner: repo.owner.name,
+            repo: repo.name,
+            name: value.name
+          });
+        }
+      }
+
       if (
         repo.labels.nodes.some(
-          repoLabel => repoLabel.name === definedLabel.name
+          repoLabel =>
+            getLabelName(repoLabel.name) === getLabelName(repoLabel.name)
         )
       ) {
         context.log("updating", repo.owner.name, repo.name, definedLabel.name);
@@ -104,6 +145,6 @@ const timerTrigger: AzureFunction = async function(
       }
     }
   }
-};
+}
 
 export default timerTrigger;
