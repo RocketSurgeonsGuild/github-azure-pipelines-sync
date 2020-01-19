@@ -71,6 +71,11 @@ const labels = [
     name: ":package: dependencies",
     color: "edc397",
     description: "Pull requests that update a dependency file"
+  },
+  {
+    name: ":shipit: merge",
+    color: "98ed98",
+    description: "Shipit!"
   }
 ];
 

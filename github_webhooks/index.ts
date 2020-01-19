@@ -112,6 +112,10 @@ async function assignToCurrentMilestone(
     labels.push(":sparkles: mysterious");
   }
 
+  if (labels.includes(":shipit: merge")) {
+    labels.splice(0, 1, labels.indexOf(":shipit: merge"));
+  }
+
   await githubRest.issues.update({
     owner: payloadRepository.owner.login,
     repo: payloadRepository.name,
@@ -277,10 +281,12 @@ function rxifyRequest<T, R>(
           if (headers.link) {
             const next = getLink(headers.link, "next");
             if (next) {
-              return from(ocotokit.request({
-                url: next,
-                request: { signal: controller.signal }
-              }) as Promise<Octokit.Response<R>>);
+              return from(
+                ocotokit.request({
+                  url: next,
+                  request: { signal: controller.signal }
+                }) as Promise<Octokit.Response<R>>
+              );
             }
           }
           return empty();
