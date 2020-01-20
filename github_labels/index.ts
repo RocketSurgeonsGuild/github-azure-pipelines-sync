@@ -76,6 +76,43 @@ export async function syncLabels(context: Context, skip = true) {
   }
 
   for (const repo of repositoryOwner.repositories.nodes) {
+    const groups = await from(repo.labels.nodes)
+      .pipe(
+        groupBy(x => getLabelName(x.name)),
+        map(x =>
+          x.pipe(
+            toArray(),
+            map(values => [x.key, values] as const)
+          )
+        ),
+        mergeAll(),
+        toArray()
+      )
+      .toPromise();
+    for (const [key, values] of groups) {
+      if (values.length > 1) {
+        for (const value of values) {
+          if (labels.some(l => l.name === value.name)) continue;
+          context.log("deleting extra label", repo.owner.name, repo.name, value.name);
+          await githubRest.issues.deleteLabel({
+            owner: repo.owner.name,
+            repo: repo.name,
+            name: value.name
+          });
+        } else {
+          if (labels.some(label => label.name === values[0].name)) continue;
+
+          context.log("deleting label", repo.owner.name, repo.name, values[0].name);
+          await githubRest.issues.deleteLabel({
+            owner: repo.owner.name,
+            repo: repo.name,
+            name: values[0].name
+          });
+        }
+      }
+
+    }
+
     context.log("repo", repo.owner.name, repo.name);
     if (repo.isArchived) continue;
     for (const definedLabel of labels) {
@@ -88,41 +125,17 @@ export async function syncLabels(context: Context, skip = true) {
             repoLabel.color === definedLabel.color
         )
       ) {
-        context.log("skipping", repo.owner.name, repo.name, definedLabel.name);
+        context.log("skipping label", repo.owner.name, repo.name, definedLabel.name);
         continue;
-      }
-
-      const groups = await from(repo.labels.nodes)
-        .pipe(
-          groupBy(x => getLabelName(x.name)),
-          map(x =>
-            x.pipe(
-              toArray(),
-              map(values => [x.key, values] as const)
-            )
-          ),
-          mergeAll(),
-          toArray()
-        )
-        .toPromise();
-      for (const [key, values] of groups.filter(z => z.length > 1)) {
-        for (const value of values) {
-          if (labels.some(label => label.name === value.name)) continue;
-          await githubRest.issues.deleteLabel({
-            owner: repo.owner.name,
-            repo: repo.name,
-            name: value.name
-          });
-        }
       }
 
       if (
         repo.labels.nodes.some(
           repoLabel =>
-            getLabelName(repoLabel.name) === getLabelName(repoLabel.name)
+            getLabelName(definedLabel.name) === getLabelName(repoLabel.name)
         )
       ) {
-        context.log("updating", repo.owner.name, repo.name, definedLabel.name);
+        context.log("updating label", repo.owner.name, repo.name, definedLabel.name);
         // call description manually?
         await githubRest.issues.updateLabel({
           description: definedLabel.description,
@@ -133,7 +146,7 @@ export async function syncLabels(context: Context, skip = true) {
           current_name: definedLabel.name
         });
       } else {
-        context.log("creating", repo.owner.name, repo.name, definedLabel.name);
+        context.log("creating label", repo.owner.name, repo.name, definedLabel.name);
 
         await githubRest.issues.createLabel({
           owner: repo.owner.name,
