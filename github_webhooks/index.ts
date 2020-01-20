@@ -107,10 +107,6 @@ async function assignToCurrentMilestone(
 
   const labels = [];
 
-  if (issue.labels.includes(":shipit: merge")) {
-    issue.labels.splice(0, 1, issue.labels.indexOf(":shipit: merge"));
-  }
-
   if (issue.labels && issue.labels.length) {
     labels.push(...issue.labels);
   } else {
@@ -122,7 +118,7 @@ async function assignToCurrentMilestone(
     repo: payloadRepository.name,
     issue_number: issue.number,
     milestone: milestone.number,
-    labels: labels
+    labels: labels.filter(z => z.includes("merge"))
   });
 }
 
