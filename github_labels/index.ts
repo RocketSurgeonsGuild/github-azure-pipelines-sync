@@ -107,7 +107,12 @@ export async function syncLabels(context: Context, skip = true) {
           });
         }
       } else {
-        if (labels.some(label => label.name === values[0].name)) continue;
+        if (
+          labels.some(
+            label => getLabelName(label.name) === getLabelName(values[0].name)
+          )
+        )
+          continue;
 
         context.log(
           "deleting label",
