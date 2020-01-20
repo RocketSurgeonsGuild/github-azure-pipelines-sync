@@ -93,24 +93,33 @@ export async function syncLabels(context: Context, skip = true) {
       if (values.length > 1) {
         for (const value of values) {
           if (labels.some(l => l.name === value.name)) continue;
-          context.log("deleting extra label", repo.owner.name, repo.name, value.name);
+          context.log(
+            "deleting extra label",
+            repo.owner.name,
+            repo.name,
+            value.name
+          );
           await githubRest.issues.deleteLabel({
             owner: repo.owner.name,
             repo: repo.name,
             name: value.name
           });
-        } else {
-          if (labels.some(label => label.name === values[0].name)) continue;
-
-          context.log("deleting label", repo.owner.name, repo.name, values[0].name);
-          await githubRest.issues.deleteLabel({
-            owner: repo.owner.name,
-            repo: repo.name,
-            name: values[0].name
-          });
         }
-      }
+      } else {
+        if (labels.some(label => label.name === values[0].name)) continue;
 
+        context.log(
+          "deleting label",
+          repo.owner.name,
+          repo.name,
+          values[0].name
+        );
+        await githubRest.issues.deleteLabel({
+          owner: repo.owner.name,
+          repo: repo.name,
+          name: values[0].name
+        });
+      }
     }
 
     context.log("repo", repo.owner.name, repo.name);
@@ -125,7 +134,12 @@ export async function syncLabels(context: Context, skip = true) {
             repoLabel.color === definedLabel.color
         )
       ) {
-        context.log("skipping label", repo.owner.name, repo.name, definedLabel.name);
+        context.log(
+          "skipping label",
+          repo.owner.name,
+          repo.name,
+          definedLabel.name
+        );
         continue;
       }
 
@@ -135,7 +149,12 @@ export async function syncLabels(context: Context, skip = true) {
             getLabelName(definedLabel.name) === getLabelName(repoLabel.name)
         )
       ) {
-        context.log("updating label", repo.owner.name, repo.name, definedLabel.name);
+        context.log(
+          "updating label",
+          repo.owner.name,
+          repo.name,
+          definedLabel.name
+        );
         // call description manually?
         await githubRest.issues.updateLabel({
           description: definedLabel.description,
@@ -146,7 +165,12 @@ export async function syncLabels(context: Context, skip = true) {
           current_name: definedLabel.name
         });
       } else {
-        context.log("creating label", repo.owner.name, repo.name, definedLabel.name);
+        context.log(
+          "creating label",
+          repo.owner.name,
+          repo.name,
+          definedLabel.name
+        );
 
         await githubRest.issues.createLabel({
           owner: repo.owner.name,
