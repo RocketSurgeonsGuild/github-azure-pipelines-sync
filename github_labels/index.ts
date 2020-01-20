@@ -76,6 +76,7 @@ export async function syncLabels(context: Context, skip = true) {
   }
 
   for (const repo of repositoryOwner.repositories.nodes) {
+    if (repo.isArchived) continue;
     const groups = await from(repo.labels.nodes)
       .pipe(
         groupBy(x => getLabelName(x.name)),
@@ -123,7 +124,6 @@ export async function syncLabels(context: Context, skip = true) {
     }
 
     context.log("repo", repo.owner.name, repo.name);
-    if (repo.isArchived) continue;
     for (const definedLabel of labels) {
       if (
         skip &&
