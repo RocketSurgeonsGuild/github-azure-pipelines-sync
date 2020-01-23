@@ -106,6 +106,7 @@ async function assignToCurrentMilestone(
   console.log({ id: issue.node_id, milestoneId: milestone.id });
 
   const labels = [];
+  issue.labels = issue.labels.filter(z => !z.includes("merge"));
 
   if (issue.labels && issue.labels.length) {
     labels.push(...issue.labels);
@@ -118,7 +119,7 @@ async function assignToCurrentMilestone(
     repo: payloadRepository.name,
     issue_number: issue.number,
     milestone: milestone.number,
-    labels: labels.filter(z => z.includes("merge"))
+    labels: labels
   });
 }
 
