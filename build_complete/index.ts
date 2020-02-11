@@ -47,9 +47,7 @@ const buildComplete: AzureFunction = async function(
   if (!version) {
     context.res = {
       status: 200,
-      body: `Version returned by build was not a valid semver ${
-        body.resource.buildNumber
-      }`
+      body: `Version returned by build was not a valid semver ${body.resource.buildNumber}`
     };
     return;
   }
@@ -62,27 +60,30 @@ const buildComplete: AzureFunction = async function(
   const { repository }: FetchMilestones = await githubGraphQL(FetchMilestones, {
     owner,
     name: repo
-  });
+  }).then(x => x as any);
 
-  const existingMilestone = repository.milestones.nodes.find(z => z.title === milestone);
+  const existingMilestone = repository.milestones.nodes.find(
+    z => z.title === milestone
+  );
   if (existingMilestone) {
     if (body.resource.buildNumber === milestone) {
       var existingMilestones = await githubRest.issues.listMilestonesForRepo({
         owner,
         repo,
-        state: 'open',
-        per_page: 100,
+        state: "open",
+        per_page: 100
       });
-      var foundMilestone = existingMilestones.data.find(z => z.title === milestone)!;
+      var foundMilestone = existingMilestones.data.find(
+        z => z.title === milestone
+      )!;
 
       await githubRest.issues.updateMilestone({
         milestone_number: foundMilestone.id,
         owner,
         repo,
         title: milestone,
-        state: 'closed'
+        state: "closed"
       });
-
     } else {
       context.res = {
         status: 200,
@@ -128,9 +129,9 @@ export interface MessageOrDetailedMessage {
 export interface Resource {
   _links: Links;
   properties: PropertiesOrTriggerInfo;
-  tags?: (null)[] | null;
-  validationResults?: (null)[] | null;
-  plans?: (PlansEntityOrOrchestrationPlan)[] | null;
+  tags?: null[] | null;
+  validationResults?: null[] | null;
+  plans?: PlansEntityOrOrchestrationPlan[] | null;
   triggerInfo: PropertiesOrTriggerInfo;
   id: number;
   buildNumber: string;
@@ -176,7 +177,7 @@ export interface PlansEntityOrOrchestrationPlan {
   planId: string;
 }
 export interface Definition {
-  drafts?: (null)[] | null;
+  drafts?: null[] | null;
   id: number;
   name: string;
   url: string;

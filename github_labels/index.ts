@@ -65,7 +65,7 @@ export async function syncLabels(context: Context, skip = true) {
       }
     `,
     { owner: "RocketSurgeonsGuild" }
-  );
+  ).then(x => x as any);
 
   function getLabelName(name: string) {
     let match = name.match(/^:\w+: (.*)$/);

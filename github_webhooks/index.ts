@@ -92,7 +92,7 @@ async function assignToCurrentMilestone(
   const { repository }: FetchMilestones = await githubGraphQL(FetchMilestones, {
     owner: payloadRepository.owner.login,
     name: payloadRepository.name
-  });
+  }).then(x => x as any);
 
   const milestoneVersions = repository.milestones.nodes
     .filter(x => !x.closed)

@@ -4,7 +4,7 @@ import { graphql } from "@octokit/graphql";
 export const gql = (strings: TemplateStringsArray) => {
   return strings.join("");
 };
-export const githubGraphQL = graphql({
+export const githubGraphQL = graphql.defaults({
   headers: { authorization: `token ${process.env.GITHUB_TOKEN}` }
 });
 export const githubRest = new Octokit({
