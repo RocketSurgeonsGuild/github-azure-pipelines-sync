@@ -81,10 +81,10 @@ webhooks.on("pull_request.closed", async event => {
 });
 
 webhooks.on("*", ({ id, name, payload }) => {
-  // console.log(name, "event received", id, payload);
+  console.log(name, "event received", id, payload);
 });
 
-async function assignToCurrentMilestone(
+async function d(
   payloadRepository: PayloadRepository,
   issue: WebhookPayloadPullRequestPullRequest
 ) {
