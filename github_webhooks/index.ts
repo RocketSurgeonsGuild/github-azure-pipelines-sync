@@ -4,7 +4,7 @@
 // Requires a repo or org web hook
 // -------------------------------------
 
-import { AzureFunction, Context, HttpRequest } from "@azure/functions";
+import { AzureFunction, Context, HttpRequest, Logger } from "@azure/functions";
 import express from "express";
 import WebhooksApi, {
   PayloadRepository,
@@ -19,6 +19,7 @@ import { githubGraphQL, githubRest, gql, FetchMilestones } from "../globals";
 import AbortController from "abort-controller";
 import { from, Observable, empty, of, forkJoin, zip } from "rxjs";
 import { mergeMap, map, expand, filter, toArray, skip } from "rxjs/operators";
+let log: Logger;
 
 const createHandler = require("azure-function-express").createHandler;
 
@@ -67,7 +68,7 @@ webhooks.on("milestone.created", async event => {
 // });
 
 webhooks.on("pull_request.closed", async event => {
-  // console.log(event.payload);
+  log.info(event.payload);
   if (event.payload.pull_request.milestone) return;
   if (!event.payload.pull_request.merged) return;
   try {
@@ -76,15 +77,15 @@ webhooks.on("pull_request.closed", async event => {
       event.payload.pull_request
     );
   } catch (e) {
-    console.error(e);
+    log.error(e);
   }
 });
 
 webhooks.on("*", ({ id, name, payload }) => {
-  console.log(name, "event received", id, payload);
+  log.info(name, "event received", id, payload);
 });
 
-async function d(
+async function assignToCurrentMilestone(
   payloadRepository: PayloadRepository,
   issue: WebhookPayloadPullRequestPullRequest
 ) {
@@ -103,7 +104,7 @@ async function d(
     z => semver.valid(z.title) === newestMilestoneVersion
   )!;
 
-  console.log({ id: issue.node_id, milestoneId: milestone.id });
+  log.info({ id: issue.node_id, milestoneId: milestone.id });
 
   const labels = [];
   issue.labels = issue.labels.filter(z => !z.includes("merge"));
@@ -123,7 +124,16 @@ async function d(
   });
 }
 
-export default createHandler(app);
+const middlewareHandler = createHandler(app);
+const webhooksHandler: AzureFunction = async function(
+  context: Context,
+  req: HttpRequest
+): Promise<void> {
+  log = context.log;
+  return middlewareHandler(context);
+};
+
+export default webhooksHandler;
 
 function ensureMilestonesAreCorrect(request: { owner: string; repo: string }) {
   const milestones = getVersionMilestones(request);
@@ -167,13 +177,13 @@ function ensureMilestonesAreCorrect(request: { owner: string; repo: string }) {
           if (milestone) {
             return from(set.pullRequests).pipe(
               mergeMap(pr => {
-                console.log(`checking milestone for #${pr.id} - ${pr.title}`);
+                log.info(`checking milestone for #${pr.id} - ${pr.title}`);
                 if (
                   milestone &&
                   pr.milestone &&
                   pr.milestone.title !== milestone.title
                 ) {
-                  console.log(
+                  log.info(
                     `need to update milestone on ${pr.title} from ${pr.milestone.title} to ${milestone.title}`
                   );
                   return from(
