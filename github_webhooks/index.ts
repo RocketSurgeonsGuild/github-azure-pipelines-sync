@@ -19,8 +19,7 @@ import { githubGraphQL, githubRest, gql, FetchMilestones } from "../globals";
 import AbortController from "abort-controller";
 import { from, Observable, empty, of, forkJoin, zip } from "rxjs";
 import { mergeMap, map, expand, filter, toArray, skip } from "rxjs/operators";
-let log: Logger;
-
+let cntx: Context;
 const createHandler = require("azure-function-express").createHandler;
 
 const webhooks = new WebhooksApi({
@@ -32,7 +31,8 @@ const app = express();
 app
   .use((req, res, next) => {
     req.url = "/";
-    console.log(req.url);
+    cntx = (req as any).context;
+    cntx.log(req.body);
     next();
   })
   .use((req, res, next) => {
@@ -68,7 +68,7 @@ webhooks.on("milestone.created", async event => {
 // });
 
 webhooks.on("pull_request.closed", async event => {
-  log.info(event.payload);
+  cntx.log.info(event.payload);
   if (event.payload.pull_request.milestone) return;
   if (!event.payload.pull_request.merged) return;
   try {
@@ -77,7 +77,7 @@ webhooks.on("pull_request.closed", async event => {
       event.payload.pull_request
     );
   } catch (e) {
-    log.error(e);
+    cntx.log.error(e);
   }
 });
 
@@ -104,7 +104,7 @@ async function assignToCurrentMilestone(
     z => semver.valid(z.title) === newestMilestoneVersion
   )!;
 
-  log.info({ id: issue.node_id, milestoneId: milestone.id });
+  cntx.log.info({ id: issue.node_id, milestoneId: milestone.id });
 
   const labels = [];
   issue.labels = issue.labels.filter(z => !z.includes("merge"));
@@ -124,17 +124,7 @@ async function assignToCurrentMilestone(
   });
 }
 
-const middlewareHandler = createHandler(app);
-const webhooksHandler: AzureFunction = async function(
-  context: Context,
-  req: HttpRequest
-): Promise<void> {
-  log = context.log;
-  context.log(req);
-  return middlewareHandler(context);
-};
-
-export default webhooksHandler;
+export default createHandler(app);
 
 function ensureMilestonesAreCorrect(request: { owner: string; repo: string }) {
   const milestones = getVersionMilestones(request);
@@ -178,13 +168,13 @@ function ensureMilestonesAreCorrect(request: { owner: string; repo: string }) {
           if (milestone) {
             return from(set.pullRequests).pipe(
               mergeMap(pr => {
-                log.info(`checking milestone for #${pr.id} - ${pr.title}`);
+                cntx.log.info(`checking milestone for #${pr.id} - ${pr.title}`);
                 if (
                   milestone &&
                   pr.milestone &&
                   pr.milestone.title !== milestone.title
                 ) {
-                  log.info(
+                  cntx.log.info(
                     `need to update milestone on ${pr.title} from ${pr.milestone.title} to ${milestone.title}`
                   );
                   return from(
