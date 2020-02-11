@@ -1,4 +1,4 @@
-import Octokit from "@octokit/rest";
+import { Octokit } from "@octokit/rest";
 
 export const gql = (strings: TemplateStringsArray) => {
   return strings.join("");

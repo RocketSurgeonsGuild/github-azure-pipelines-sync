@@ -11,7 +11,7 @@ import WebhooksApi, {
   WebhookPayloadIssuesIssue,
   WebhookPayloadPullRequestPullRequest
 } from "@octokit/webhooks";
-import Octokit = require("@octokit/rest");
+import { Octokit } from "@octokit/rest";
 import { identity, maxBy, differenceBy, slice } from "lodash";
 import semver from "semver";
 import { githubGraphQL, githubRest, gql, FetchMilestones } from "../globals";
@@ -81,9 +81,9 @@ webhooks.on("pull_request.closed", async event => {
   }
 });
 
-webhooks.on("*", ({ id, name, payload }) => {
-  log.info(name, "event received", id, payload);
-});
+// webhooks.on("*", ({ id, name, payload }) => {
+//   log.info(name, "event received", id, payload);
+// });
 
 async function assignToCurrentMilestone(
   payloadRepository: PayloadRepository,
@@ -130,6 +130,7 @@ const webhooksHandler: AzureFunction = async function(
   req: HttpRequest
 ): Promise<void> {
   log = context.log;
+  context.log(req);
   return middlewareHandler(context);
 };
 
