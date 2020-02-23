@@ -66,10 +66,9 @@ webhooks.on("milestone.created", async event => {
 
 webhooks.on("pull_request.closed", async event => {
   console.log(event.payload);
-  if (event.payload.pull_request.milestone) return;
   if (!event.payload.pull_request.merged) return;
   try {
-    await assignToCurrentMilestone(
+    await assignPrToMilestoneAndLabel(
       event.payload.repository,
       event.payload.pull_request
     );
@@ -82,7 +81,7 @@ webhooks.on("pull_request.closed", async event => {
 //   log.info(name, "event received", id, payload);
 // });
 
-async function assignToCurrentMilestone(
+async function assignPrToMilestoneAndLabel(
   payloadRepository: PayloadRepository,
   issue: WebhookPayloadPullRequestPullRequest
 ) {
