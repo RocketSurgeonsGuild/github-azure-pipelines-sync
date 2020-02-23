@@ -19,7 +19,6 @@ import { githubGraphQL, githubRest, gql, FetchMilestones } from "../globals";
 import AbortController from "abort-controller";
 import { from, Observable, empty, of, forkJoin, zip } from "rxjs";
 import { mergeMap, map, expand, filter, toArray, skip } from "rxjs/operators";
-let cntx: Context;
 const createHandler = require("azure-function-express").createHandler;
 
 const webhooks = new WebhooksApi({
@@ -31,8 +30,6 @@ const app = express();
 app
   .use((req, res, next) => {
     req.url = "/";
-    cntx = (req as any).context;
-    cntx.log(req.body);
     next();
   })
   .use((req, res, next) => {
@@ -68,7 +65,7 @@ webhooks.on("milestone.created", async event => {
 // });
 
 webhooks.on("pull_request.closed", async event => {
-  cntx.log.info(event.payload);
+  console.log(event.payload);
   if (event.payload.pull_request.milestone) return;
   if (!event.payload.pull_request.merged) return;
   try {
@@ -77,7 +74,7 @@ webhooks.on("pull_request.closed", async event => {
       event.payload.pull_request
     );
   } catch (e) {
-    cntx.log.error(e);
+    console.error(e);
   }
 });
 
@@ -104,7 +101,7 @@ async function assignToCurrentMilestone(
     z => semver.valid(z.title) === newestMilestoneVersion
   )!;
 
-  cntx.log.info({ id: issue.node_id, milestoneId: milestone.id });
+  console.log({ id: issue.node_id, milestoneId: milestone.id });
 
   const labels = [];
   issue.labels = issue.labels.filter(z => !z.includes("merge"));
@@ -168,13 +165,13 @@ function ensureMilestonesAreCorrect(request: { owner: string; repo: string }) {
           if (milestone) {
             return from(set.pullRequests).pipe(
               mergeMap(pr => {
-                cntx.log.info(`checking milestone for #${pr.id} - ${pr.title}`);
+                console.log(`checking milestone for #${pr.id} - ${pr.title}`);
                 if (
                   milestone &&
                   pr.milestone &&
                   pr.milestone.title !== milestone.title
                 ) {
-                  cntx.log.info(
+                  console.log(
                     `need to update milestone on ${pr.title} from ${pr.milestone.title} to ${milestone.title}`
                   );
                   return from(
